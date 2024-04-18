@@ -1,43 +1,51 @@
 use std::io::{Read, Write};
-use std::net::TcpStream; 
+use std::net::TcpStream;
+use std::thread;
+use std::time::Duration;
 
 const SERVER_IP: &str = "127.0.0.1";
-const SERVER_PORT: usize = 8080;
+const SERVER_PORT: usize = 9070;
 
-const NAME: &str = "Outdoor_Light";
-const ID: u32 = 245321;
+const NAME: &str = "Big_Pack";
+const ID: u32 = 12;
 
+fn send_message(conn: &mut TcpStream, message: &Message) {
+    conn.write_all(message.to_string().as_bytes())
+        .expect("couldn't send message");
+}
 fn main() {
     // Connect to TCP Server
-    println!("Connection To Server");
+    println!("Connecting To Server...");
     let mut stream = TcpStream::connect(format!("{}:{}", SERVER_IP, SERVER_PORT))
         .expect("Could Not Connect To Server");
-    println!("Connection Success!");
+    println!("Connected To Server");
 
+    // Sending a profile message
     let message = Message {
-        message_type:MessageType::PROFILE,
-        data:get_device_data(),
-    }.to_string();
+        message_type: MessageType::PROFILE,
+        data: get_device_data(),
+    };
+    send_message(&mut stream, &message);
 
-    stream.write_all(message.as_bytes()).expect("couldn't send message");
-
-    let message_two = Message {
-        message_type:MessageType::UPDATE,
-        data:
-        r#"{
+    // Sending an update message
+    let message = Message {
+        message_type: MessageType::UPDATE,
+        data: r#"{
             "entries":[
-                {"table":"BatteryVoltage","data":"726.2"},
-                {"table":"SolarVoltage","data":"63.5"},
-                {"table":"WaterLevel","data":"343255"}
+                {"table":"BatteryVoltage","data":"4424246.2"},
+                {"table":"SolarVoltage","data":"482424.5"}
                 ]
-            }"#.to_string(),
-    }.to_string();
-    stream.write_all(message_two.as_bytes()).expect("Failed To Send");
+            }"#
+        .to_string(),
+    };
+    thread::sleep(Duration::from_secs(1));
+    send_message(&mut stream, &message);
+
 }
 
 fn get_device_data() -> String {
     format!(
-r#"{{
+        r#"{{
     "name":"{NAME}",
     "id":"{ID}",
     "sensors":[
